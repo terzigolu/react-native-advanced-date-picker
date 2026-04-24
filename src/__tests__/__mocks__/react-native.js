@@ -57,11 +57,23 @@ const Animated = {
     interpolate() { return 0 }
   },
   timing: () => ({ start: (cb) => cb && cb() }),
+  spring: () => ({ start: (cb) => cb && cb() }),
   parallel: (anims) => ({ start: (cb) => cb && cb() }),
   multiply: (a, b) => makeInterpolation(),
   subtract: (a, b) => makeInterpolation(),
   add: (a, b) => makeInterpolation(),
   divide: (a, b) => makeInterpolation(),
+}
+
+const Easing = {
+  out: (fn) => fn,
+  in: (fn) => fn,
+  inOut: (fn) => fn,
+  quad: (t) => t,
+  cubic: (t) => t,
+  linear: (t) => t,
+  bezier: () => (t) => t,
+  ease: (t) => t,
 }
 
 const StatusBar = {
@@ -100,6 +112,7 @@ module.exports = {
   Modal,
   Alert,
   Animated,
+  Easing,
   StatusBar,
   StyleSheet,
   Dimensions,

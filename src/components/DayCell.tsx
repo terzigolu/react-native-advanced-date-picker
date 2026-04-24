@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  Easing,
 } from 'react-native'
 import type { StyleProp, ViewStyle, TextStyle } from 'react-native'
 import type { DateItem } from '../utils/types'
@@ -174,22 +175,20 @@ const DayCell: React.FC<Props> = ({
     bandStyle = styles.bandLeft
   }
 
-  // Progress bar fill: band grows from left to right (scaleX 0 → 1 with a
-  // left-anchored origin). Delay each day from startDate so the range fills
-  // cell-by-cell left-to-right instead of every cell animating in place.
-  //
-  // RN's default scale origin is center, so we pair scaleX with a translateX
-  // of `-((1 - progress) * width / 2)` to keep the left edge pinned while it
-  // expands to the right. Both transforms run on the native driver.
-  const bandWidth = bandStyle === styles.bandFull ? SLOT : SLOT / 2
-  const progress = useRef(new Animated.Value(disableAnimation ? 1 : 0)).current
+  // Range band fill: simple opacity fade-in, staggered cell-by-cell from
+  // startDate so the range visually "runs" left-to-right. Using opacity
+  // (native driver) keeps transitions optically smooth — no scale/translate
+  // trick, no "stretching" artefact, just a continuous wave of reveal.
+  const bandOpacity = useRef(
+    new Animated.Value(disableAnimation ? 1 : 0),
+  ).current
   useEffect(() => {
     if (!bandStyle) {
-      progress.setValue(0)
+      bandOpacity.setValue(0)
       return
     }
     if (disableAnimation) {
-      progress.setValue(1)
+      bandOpacity.setValue(1)
       return
     }
     const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -200,27 +199,47 @@ const DayCell: React.FC<Props> = ({
         Math.round((dayDate.getTime() - startDateNorm.getTime()) / MS_PER_DAY),
       )
     }
-    // Per-cell fill duration roughly matches one stagger step so consecutive
-    // cells' animations overlap just enough to look continuous.
-    const PER_CELL_MS = 70
-    const CELL_DURATION = 120
-    const delay = Math.min(diffDays * PER_CELL_MS, 800)
-    progress.setValue(0)
-    Animated.timing(progress, {
+    // Snappy timing: ~3× faster than previous design. Overlapping opacity
+    // fades feel continuous rather than "pop pop pop".
+    const PER_CELL_MS = 18
+    const CELL_DURATION = 110
+    const MAX_DELAY = 280
+    const delay = Math.min(diffDays * PER_CELL_MS, MAX_DELAY)
+    bandOpacity.setValue(0)
+    Animated.timing(bandOpacity, {
       toValue: 1,
       duration: CELL_DURATION,
       delay,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bandStyle, startDateNorm?.getTime(), endDateNorm?.getTime(), disableAnimation])
 
-  // Keep the left edge fixed while scaleX animates: shift by half the "empty"
-  // portion of the unscaled width.
-  const bandTranslateX = Animated.multiply(
-    Animated.subtract(1, progress),
-    -bandWidth / 2,
-  )
+  // Endpoint circle: spring-pop from 0.85 → 1 when the cell becomes selected.
+  // Gives instant tactile feedback on tap — the "snap" half of "snappy".
+  const circleScale = useRef(
+    new Animated.Value(disableAnimation ? 1 : 0.85),
+  ).current
+  useEffect(() => {
+    if (!isSelected) {
+      circleScale.setValue(0.85)
+      return
+    }
+    if (disableAnimation) {
+      circleScale.setValue(1)
+      return
+    }
+    circleScale.setValue(0.85)
+    Animated.spring(circleScale, {
+      toValue: 1,
+      damping: 14,
+      stiffness: 240,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSelected, disableAnimation])
 
   // Weekend color resolution: weekendColor wins over saturday/sunday colors.
   const weekendOverride = theme.weekendColor
@@ -266,33 +285,33 @@ const DayCell: React.FC<Props> = ({
       onPress={() => !isDisabled && onPress(day)}
       disabled={isDisabled}
       style={[styles.slot, style, overrideSlotStyle]}>
-      {/* Layer 1: range band (bottom) — left-anchored scaleX grows the fill
-          from startDate cell rightward, cell-by-cell staggered. */}
+      {/* Layer 1: range band (bottom) — opacity fade-in, staggered per cell
+          from startDate so the reveal feels like a continuous left-to-right
+          wave rather than individual cells popping. */}
       {bandStyle && (
         <Animated.View
           style={[
             bandStyle,
             {
               backgroundColor: theme.rangeBackground,
-              transform: [
-                { translateX: bandTranslateX },
-                { scaleX: progress },
-              ],
+              opacity: bandOpacity,
             },
             rangeStyle,
           ]}
         />
       )}
 
-      {/* Layer 2: selected circle (middle) */}
+      {/* Layer 2: selected circle (middle) — spring-pops from 0.85 → 1 for
+          instant tactile feedback on tap. */}
       {isSelected && (
-        <View
+        <Animated.View
           style={[
             styles.circle,
             {
               backgroundColor: theme.primary,
               borderRadius: theme.dayBorderRadius,
             },
+            { transform: [{ scale: circleScale }] },
             selectedStyle,
           ]}
         />

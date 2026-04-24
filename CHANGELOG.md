@@ -5,6 +5,16 @@ All notable changes to `react-native-advanced-date-picker` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] — 2026-04-24
+
+### Changed
+- **Range-fill animation is now ~3× snappier.** Reworked based on user feedback ("feels like 10 fps"): the per-cell stagger dropped from 70 ms to 18 ms, fade duration 120 → 110 ms, and the total cap from 920 ms to ~390 ms for long ranges. Short ranges (≤ 10 days) now settle in under 280 ms.
+- **Band animation switched from `scaleX + translateX` origin-left trick to plain `opacity` fade-in.** Kills the visible "stretch" artefact and reduces native-driver work. Easing is `Easing.out(Easing.cubic)`.
+- **Endpoint selected circle now has a spring "pop"** (damping 14, stiffness 240, mass 0.8, native driver) so the tap feels tactile and immediate, independent of range length.
+
+### Notes
+- No public API changes. `disableAnimation` still disables both the band fade and the circle pop.
+
 ## [0.2.1] — 2026-04-24
 
 ### Added
