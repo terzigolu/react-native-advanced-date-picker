@@ -2,6 +2,14 @@
 
 A zero-dependency, fully customizable calendar date picker for React Native. Supports single and range date selection, i18n, theming, holidays, and both a simple prop-driven API and composable sub-components.
 
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/terzigolu/react-native-advanced-date-picker/main/assets/calendar.gif"
+    alt="react-native-advanced-date-picker demo"
+    width="320"
+  />
+</p>
+
 ## Features
 
 - **Zero mandatory dependencies** — date math uses native `Intl` API
