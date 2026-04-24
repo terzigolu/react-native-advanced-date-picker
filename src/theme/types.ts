@@ -25,4 +25,37 @@ export interface Theme {
   dividerColor: string
   /** Font family (default: undefined — system font) */
   fontFamily?: string
+  /** Saturday text color. Fallback: textColor */
+  saturdayColor?: string
+  /** Weekend (Sat + Sun) text color. If set, overrides both saturdayColor and sundayColor */
+  weekendColor?: string
+  /** Granular font size overrides */
+  fontSize?: {
+    /** Day cell text size (default: 14) */
+    day?: number
+    /** Week day header text size (default: 12) */
+    weekDay?: number
+    /** Month header text size (default: 12) */
+    monthHeader?: number
+    /** Holiday label text size (default: 12) */
+    holiday?: number
+    /** Save button text size (default: 16) */
+    saveButton?: number
+  }
+  /** Layout spacing overrides */
+  spacing?: {
+    /** Vertical gap between months (default: 24) */
+    monthGap?: number
+    /** Gap between week day header divider and first month (default: 16) */
+    weekDayHeaderGap?: number
+    /** Gap between month grid and holiday list (default: 8) */
+    holidayGap?: number
+  }
+  /** Additional radius overrides (dayBorderRadius stays on root for back-compat) */
+  radius?: {
+    /** Save button border radius (default: 12) */
+    saveButton?: number
+    /** Modal container border radius (default: 0 — full screen) */
+    modal?: number
+  }
 }

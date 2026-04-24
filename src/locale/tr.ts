@@ -18,4 +18,9 @@ export const tr: Locale = {
   pastDateWarning: 'Geçmiş bir tarih seçemezsiniz.',
   warningTitle: 'Uyarı',
   ok: 'Tamam',
+  selectDate: 'Tarih seçin',
+  selectRange: 'Tarih aralığı seçin',
+  from: 'Başlangıç',
+  to: 'Bitiş',
+  clear: 'Temizle',
 }

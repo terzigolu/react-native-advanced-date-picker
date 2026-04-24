@@ -17,4 +17,14 @@ export interface Locale {
   warningTitle: string
   /** OK button text in alerts */
   ok: string
+  /** Title/placeholder for single date selection (e.g. "Select date") */
+  selectDate?: string
+  /** Title/placeholder for range selection (e.g. "Select date range") */
+  selectRange?: string
+  /** "From" label for range start (e.g. "From") */
+  from?: string
+  /** "To" label for range end (e.g. "To") */
+  to?: string
+  /** Clear/reset button text (e.g. "Clear") */
+  clear?: string
 }

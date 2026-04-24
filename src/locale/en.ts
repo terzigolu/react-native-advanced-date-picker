@@ -18,4 +18,9 @@ export const en: Locale = {
   pastDateWarning: 'You cannot select a past date.',
   warningTitle: 'Warning',
   ok: 'OK',
+  selectDate: 'Select date',
+  selectRange: 'Select date range',
+  from: 'From',
+  to: 'To',
+  clear: 'Clear',
 }

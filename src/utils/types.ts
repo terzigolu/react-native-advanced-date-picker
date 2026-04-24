@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export type DatePickerMode = 'single' | 'range'
 
 export type DateRange = {
@@ -6,9 +8,16 @@ export type DateRange = {
 }
 
 export type Holiday = {
-  /** Format: 'MM-DD' (e.g. '01-01' for January 1st) */
+  /** Format: 'MM-DD' (recurring yearly) or 'YYYY-MM-DD' (specific date) */
   date: string
+  /** Display label shown next to/under the date */
   label: string
+  /** Override label text color (falls back to theme.holidayColor) */
+  color?: string
+  /** Optional icon rendered alongside holiday (reserved for future use) */
+  icon?: ReactNode
+  /** Emphasize holiday (e.g. bold text) */
+  important?: boolean
 }
 
 export interface DateItem {
@@ -18,6 +27,7 @@ export interface DateItem {
   dayName: string
   monthName: string
   isSunday: boolean
+  isSaturday: boolean
   isToday: boolean
   isHoliday: boolean
   holidayLabel?: string

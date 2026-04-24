@@ -15,6 +15,7 @@ const makeDay = (overrides: Partial<DateItem> = {}): DateItem => ({
   dayName: 'Sunday',
   monthName: 'March',
   isSunday: false,
+  isSaturday: false,
   isToday: false,
   isHoliday: false,
   isEmpty: false,
@@ -147,6 +148,110 @@ describe('DayCell', () => {
     expect(state).toHaveProperty('isToday')
     expect(state).toHaveProperty('isHoliday')
     expect(state).toHaveProperty('isSunday')
+  })
+})
+
+describe('DayCell — callbacks & customization', () => {
+  const defaultProps = {
+    day: makeDay(),
+    startDate: null,
+    endDate: null,
+    theme: defaultTheme,
+    onPress: jest.fn(),
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('getDayColor overrides day text color', () => {
+    const getDayColor = jest.fn(() => '#FF00AA')
+    const renderer = create(
+      <DayCell {...defaultProps} getDayColor={getDayColor} />
+    )
+    expect(getDayColor).toHaveBeenCalled()
+    const callArg = (getDayColor.mock.calls[0] as any)[0]
+    expect(callArg.day.day).toBe(15)
+    expect(callArg.state).toHaveProperty('isSelected')
+    expect(callArg.theme).toBeTruthy()
+
+    // The rendered <Text> should carry the overridden color in its style array.
+    const textNode = renderer.root.findByType('Text' as any)
+    const styles = Array.isArray(textNode.props.style)
+      ? textNode.props.style
+      : [textNode.props.style]
+    const flat = Object.assign({}, ...styles.filter(Boolean))
+    expect(flat.color).toBe('#FF00AA')
+  })
+
+  it('getDayContent replaces the default day number', () => {
+    const getDayContent = jest.fn(() =>
+      React.createElement('View', { testID: 'custom-day' })
+    )
+    const renderer = create(
+      <DayCell {...defaultProps} getDayContent={getDayContent} />
+    )
+    expect(getDayContent).toHaveBeenCalled()
+
+    // Custom node is rendered.
+    const customNodes = renderer.root.findAll(
+      (node) => node.props && node.props.testID === 'custom-day'
+    )
+    expect(customNodes.length).toBeGreaterThanOrEqual(1)
+
+    // Default day-number <Text> is NOT rendered.
+    const tree = renderer.toJSON()
+    expect(findByText(tree, '15')).toBeNull()
+  })
+
+  it('getDayStyle is merged onto the slot style', () => {
+    const getDayStyle = jest.fn(() => ({ backgroundColor: '#112233' }))
+    const renderer = create(
+      <DayCell {...defaultProps} getDayStyle={getDayStyle} />
+    )
+    expect(getDayStyle).toHaveBeenCalled()
+
+    // The outer TouchableOpacity is the slot in normal (non-renderDay) path.
+    const touchable = renderer.root.findByType('TouchableOpacity' as any)
+    const rawStyle = touchable.props.style
+    const styles = Array.isArray(rawStyle) ? rawStyle : [rawStyle]
+    const flat = Object.assign({}, ...styles.filter(Boolean))
+    expect(flat.backgroundColor).toBe('#112233')
+  })
+
+  it('disableAnimation renders without crashing and produces a range band', () => {
+    // Range of two consecutive days: the middle-state cell gets `isInRange`.
+    // Here we test the range-start endpoint, which still renders a band.
+    const startDate = new Date(2026, 2, 15)
+    const endDate = new Date(2026, 2, 16)
+    const renderer = create(
+      <DayCell
+        {...defaultProps}
+        day={makeDay()}
+        startDate={startDate}
+        endDate={endDate}
+        disableAnimation
+      />
+    )
+    // Smoke: render succeeded and produced some tree.
+    const tree = renderer.toJSON()
+    expect(tree).toBeTruthy()
+
+    // Day number should still render in normal (non-content-override) path.
+    expect(findByText(tree, '15')).not.toBeNull()
+
+    // An Animated.View (the range band) should be present as a child node.
+    // In the RN mock Animated.View === View, so look for a view with an
+    // absolutely positioned style (the band layer).
+    const views = renderer.root.findAllByType('View' as any)
+    const hasBand = views.some((v) => {
+      const s = v.props.style
+      if (!s) return false
+      const styles = Array.isArray(s) ? s : [s]
+      const flat = Object.assign({}, ...styles.filter(Boolean))
+      return flat.position === 'absolute' && flat.height && flat.backgroundColor
+    })
+    expect(hasBand).toBe(true)
   })
 })
 

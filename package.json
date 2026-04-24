@@ -1,6 +1,6 @@
 {
   "name": "react-native-advanced-date-picker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A zero-dependency, fully customizable calendar date picker for React Native with single/range selection, i18n, theming, and holidays support.",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",

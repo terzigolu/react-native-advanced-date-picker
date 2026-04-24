@@ -45,15 +45,31 @@ const Alert = {
   alert: jest.fn(),
 }
 
+const makeInterpolation = () => ({
+  interpolate: () => 0,
+})
+
 const Animated = {
   View: View,
   Value: class {
     constructor(val) { this._value = val }
     setValue(val) { this._value = val }
+    interpolate() { return 0 }
   },
   timing: () => ({ start: (cb) => cb && cb() }),
   parallel: (anims) => ({ start: (cb) => cb && cb() }),
+  multiply: (a, b) => makeInterpolation(),
+  subtract: (a, b) => makeInterpolation(),
+  add: (a, b) => makeInterpolation(),
+  divide: (a, b) => makeInterpolation(),
 }
+
+const StatusBar = {
+  currentHeight: 0,
+}
+
+const ScrollView = ({ children, style, ...props }) =>
+  React.createElement('ScrollView', { style, ...props }, children)
 
 const StyleSheet = {
   create: (styles) => styles,
@@ -80,9 +96,11 @@ module.exports = {
   Text,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   Modal,
   Alert,
   Animated,
+  StatusBar,
   StyleSheet,
   Dimensions,
   Platform,
