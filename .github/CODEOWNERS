@@ -1,0 +1,10 @@
+# Default reviewer for every path — the maintainer.
+# GitHub auto-requests a review from this owner on any PR.
+* @terzigolu
+
+# Extra caution around the public API surface and release tooling.
+/src/index.ts @terzigolu
+/src/components/ @terzigolu
+/package.json @terzigolu
+/CHANGELOG.md @terzigolu
+/.github/ @terzigolu

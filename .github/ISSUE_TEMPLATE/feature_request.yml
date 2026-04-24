@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest a new feature or enhancement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use-case. What are you trying to do that the library doesn't currently support?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would the API look like? Include a sample prop / signature.
+      placeholder: |
+        ```ts
+        <AdvancedDatePicker
+          highlightWeekends
+          weekendHighlightStyle={{ backgroundColor: '#FFF5E0' }}
+        />
+        ```
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you've tried, or why the existing `renderDay` / `getDayStyle` isn't enough.
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: Are you willing to help?
+      options:
+        - label: I can send a PR myself
+        - label: I can help review / test

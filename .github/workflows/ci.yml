@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: typescript · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --ignore-scripts
+        # --ignore-scripts skips the `prepare: bob build` hook during install;
+        # we run `yarn build` explicitly below so it's captured in CI logs.
+
+      - name: TypeScript check
+        run: yarn typescript
+
+      - name: Unit tests
+        run: yarn test --ci --coverage=false
+
+      - name: Library build
+        run: yarn build
