@@ -14,9 +14,17 @@ updates:
     commit-message:
       prefix: chore(deps)
     # Peer-deps (react, react-native) are intentionally loose; don't bump minimums automatically.
+    # react-test-renderer is pinned to React 18 for now — revisit when the repo upgrades to React 19.
+    # TypeScript stays on 5.x until the 6.x ecosystem settles.
     ignore:
       - dependency-name: react
       - dependency-name: react-native
+      - dependency-name: react-test-renderer
+      - dependency-name: "@types/react-test-renderer"
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       babel:
         patterns:
