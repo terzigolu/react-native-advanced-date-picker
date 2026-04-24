@@ -175,10 +175,11 @@ const DayCell: React.FC<Props> = ({
     bandStyle = styles.bandLeft
   }
 
-  // Range band fill: simple opacity fade-in, staggered cell-by-cell from
-  // startDate so the range visually "runs" left-to-right. Using opacity
-  // (native driver) keeps transitions optically smooth — no scale/translate
-  // trick, no "stretching" artefact, just a continuous wave of reveal.
+  // Range band fill: uniform opacity fade-in. Every in-range cell fades in
+  // at the same time. No stagger — any sequential reveal, no matter how
+  // fast, reads as cascading noise rather than "the range is now selected".
+  // Uniform = the range snaps into place as a single state transition,
+  // which is what Apple Calendar / Notion / Google Calendar all do.
   const bandOpacity = useRef(
     new Animated.Value(disableAnimation ? 1 : 0),
   ).current
@@ -191,57 +192,17 @@ const DayCell: React.FC<Props> = ({
       bandOpacity.setValue(1)
       return
     }
-    const MS_PER_DAY = 1000 * 60 * 60 * 24
-    let diffDays = 0
-    if (startDateNorm && dayDate) {
-      diffDays = Math.max(
-        0,
-        Math.round((dayDate.getTime() - startDateNorm.getTime()) / MS_PER_DAY),
-      )
-    }
-    // Snappy timing: ~3× faster than previous design. Overlapping opacity
-    // fades feel continuous rather than "pop pop pop".
-    const PER_CELL_MS = 18
-    const CELL_DURATION = 110
-    const MAX_DELAY = 280
-    const delay = Math.min(diffDays * PER_CELL_MS, MAX_DELAY)
     bandOpacity.setValue(0)
     Animated.timing(bandOpacity, {
       toValue: 1,
-      duration: CELL_DURATION,
-      delay,
+      duration: 160,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bandStyle, startDateNorm?.getTime(), endDateNorm?.getTime(), disableAnimation])
 
-  // Endpoint circle: spring-pop from 0.85 → 1 when the cell becomes selected.
-  // Gives instant tactile feedback on tap — the "snap" half of "snappy".
-  const circleScale = useRef(
-    new Animated.Value(disableAnimation ? 1 : 0.85),
-  ).current
-  useEffect(() => {
-    if (!isSelected) {
-      circleScale.setValue(0.85)
-      return
-    }
-    if (disableAnimation) {
-      circleScale.setValue(1)
-      return
-    }
-    circleScale.setValue(0.85)
-    Animated.spring(circleScale, {
-      toValue: 1,
-      damping: 14,
-      stiffness: 240,
-      mass: 0.8,
-      useNativeDriver: true,
-    }).start()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSelected, disableAnimation])
-
-  // Weekend color resolution: weekendColor wins over saturday/sunday colors.
+// Weekend color resolution: weekendColor wins over saturday/sunday colors.
   const weekendOverride = theme.weekendColor
   const satColor = weekendOverride ?? theme.saturdayColor
   const sunColor = weekendOverride ?? theme.sundayColor
@@ -285,9 +246,8 @@ const DayCell: React.FC<Props> = ({
       onPress={() => !isDisabled && onPress(day)}
       disabled={isDisabled}
       style={[styles.slot, style, overrideSlotStyle]}>
-      {/* Layer 1: range band (bottom) — opacity fade-in, staggered per cell
-          from startDate so the reveal feels like a continuous left-to-right
-          wave rather than individual cells popping. */}
+      {/* Layer 1: range band — uniform opacity fade-in for the whole range.
+          Every in-range cell animates simultaneously. */}
       {bandStyle && (
         <Animated.View
           style={[
@@ -301,17 +261,16 @@ const DayCell: React.FC<Props> = ({
         />
       )}
 
-      {/* Layer 2: selected circle (middle) — spring-pops from 0.85 → 1 for
-          instant tactile feedback on tap. */}
+      {/* Layer 2: selected circle — appears instantly when tapped. TouchableOpacity's
+          activeOpacity already provides tactile feedback on the tap itself. */}
       {isSelected && (
-        <Animated.View
+        <View
           style={[
             styles.circle,
             {
               backgroundColor: theme.primary,
               borderRadius: theme.dayBorderRadius,
             },
-            { transform: [{ scale: circleScale }] },
             selectedStyle,
           ]}
         />

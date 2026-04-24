@@ -5,6 +5,15 @@ All notable changes to `react-native-advanced-date-picker` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] — 2026-04-24
+
+### Changed
+- **Range-fill animation is now uniform instead of staggered.** All in-range cells fade in at the same time (160 ms, cubic ease-out). Matches what Apple Calendar, Notion, and Google Calendar do — sequential reveal reads as cascading noise, uniform reads as "the range is now selected", regardless of length.
+- **Endpoint selected circle no longer springs.** It appears instantly; `TouchableOpacity`'s `activeOpacity` already provides tap feedback. One less animation competing for attention.
+
+### Notes
+- Simpler code path — no per-cell stagger delay math, no spring config. Animation surface is a single `Animated.timing` on opacity.
+
 ## [0.2.2] — 2026-04-24
 
 ### Changed
