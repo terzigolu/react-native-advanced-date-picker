@@ -1,5 +1,12 @@
 # react-native-advanced-date-picker
 
+[![npm version](https://img.shields.io/npm/v/react-native-advanced-date-picker.svg?style=flat-square)](https://www.npmjs.com/package/react-native-advanced-date-picker)
+[![npm downloads](https://img.shields.io/npm/dm/react-native-advanced-date-picker.svg?style=flat-square)](https://www.npmjs.com/package/react-native-advanced-date-picker)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/react-native-advanced-date-picker?style=flat-square)](https://bundlephobia.com/package/react-native-advanced-date-picker)
+[![types](https://img.shields.io/npm/types/react-native-advanced-date-picker?style=flat-square)](https://www.npmjs.com/package/react-native-advanced-date-picker)
+[![license](https://img.shields.io/npm/l/react-native-advanced-date-picker.svg?style=flat-square)](./LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/terzigolu/react-native-advanced-date-picker/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/terzigolu/react-native-advanced-date-picker/actions/workflows/ci.yml)
+
 A zero-dependency, fully customizable calendar date picker for React Native. Supports single and range date selection, i18n, theming, holidays, and both a simple prop-driven API and composable sub-components.
 
 <p align="center">
