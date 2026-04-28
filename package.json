@@ -78,7 +78,7 @@
     "@babel/preset-flow": "^7.27.1",
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@react-native/js-polyfills": "^0.84.1",
+    "@react-native/js-polyfills": "^0.85.2",
     "@storybook/react": "^10.3.5",
     "@storybook/react-vite": "^10.3.5",
     "@testing-library/dom": "^10.4.1",
