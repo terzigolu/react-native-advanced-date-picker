@@ -23,5 +23,12 @@
     "isolatedModules": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "lib", "example"]
+  "exclude": [
+    "node_modules",
+    "lib",
+    "example",
+    ".storybook",
+    "**/*.stories.ts",
+    "**/*.stories.tsx"
+  ]
 }

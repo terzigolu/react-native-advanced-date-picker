@@ -1,7 +1,7 @@
 {
   "name": "react-native-advanced-date-picker",
-  "version": "0.2.3",
-  "description": "A zero-dependency, fully customizable calendar date picker for React Native with single/range selection, i18n, theming, and holidays support.",
+  "version": "0.3.0",
+  "description": "Zero-dependency, fully customizable React Native calendar date picker. Single, range & multi-select; week/month/year/time/datetime views; presets; per-date badges; accessibility; non-Gregorian calendars (Hijri, Persian, Buddhist); optional web support; headless useDatePicker() hook.",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/src/index.d.ts",
@@ -21,7 +21,10 @@
     "test": "jest",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "prepare": "bob build",
-    "prepublishOnly": "yarn typescript && yarn test && yarn build"
+    "prepublishOnly": "yarn typescript && yarn test && yarn build",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build -o storybook-static",
+    "example": "yarn --cwd example start"
   },
   "sideEffects": false,
   "engines": {
@@ -34,10 +37,27 @@
     "datepicker",
     "date-range",
     "range-picker",
+    "multi-select",
+    "week-picker",
+    "month-picker",
+    "year-picker",
+    "time-picker",
+    "datetime-picker",
     "i18n",
     "customizable",
+    "themeable",
+    "headless",
+    "accessibility",
+    "a11y",
+    "hijri",
+    "persian",
+    "jalali",
+    "buddhist",
+    "presets",
+    "booking",
     "ios",
-    "android"
+    "android",
+    "web"
   ],
   "repository": {
     "type": "git",
@@ -59,6 +79,8 @@
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@react-native/js-polyfills": "^0.84.1",
+    "@storybook/react": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react": "^16.3.2",
@@ -68,6 +90,7 @@
     "@types/react": "^18.2.0",
     "@types/react-native": "^0.73.0",
     "@types/react-test-renderer": "^18.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "babel-jest": "^30.3.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
@@ -76,22 +99,33 @@
     "react-dom": "18.3.1",
     "react-native": "^0.73.0",
     "react-native-builder-bob": "^0.23.0",
+    "react-native-web": "^0.21.2",
     "react-test-renderer": "18.2.0",
-    "typescript": "^5.3.0"
+    "storybook": "^10.3.5",
+    "typescript": "^5.3.0",
+    "vite": "^6.0.0"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-native": ">=0.63.0",
-    "react-native-safe-area-context": "*"
+    "react-native-safe-area-context": "*",
+    "react-native-web": "*"
   },
   "peerDependenciesMeta": {
     "react-native-safe-area-context": {
+      "optional": true
+    },
+    "react-native-web": {
       "optional": true
     }
   },
   "react-native-builder-bob": {
     "source": "src",
     "output": "lib",
+    "exclude": [
+      "**/{__tests__,__fixtures__,__mocks__}/**",
+      "**/*.stories.@(ts|tsx)"
+    ],
     "targets": [
       "commonjs",
       "module",

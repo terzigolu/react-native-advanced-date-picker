@@ -7,7 +7,7 @@
 [![license](https://img.shields.io/npm/l/react-native-advanced-date-picker.svg?style=flat-square)](./LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/terzigolu/react-native-advanced-date-picker/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/terzigolu/react-native-advanced-date-picker/actions/workflows/ci.yml)
 
-A zero-dependency, fully customizable calendar date picker for React Native. Supports single and range date selection, i18n, theming, holidays, and both a simple prop-driven API and composable sub-components.
+A zero-dependency, fully customizable calendar date picker for React Native. Supports single, range, and multi-select date selection, week/month/year/time/datetime views, preset chips, per-day event badges, accessibility, optional web support, non-Gregorian calendars (Hijri, Persian, Buddhist), and both a simple prop-driven API and a fully headless `useDatePicker()` hook.
 
 <p align="center">
   <img
@@ -20,18 +20,117 @@ A zero-dependency, fully customizable calendar date picker for React Native. Sup
 ## Features
 
 - **Zero mandatory dependencies** — date math uses native `Intl` API
-- **Single & Range selection** — pick one date or a date range
-- **i18n ready** — built-in English & Turkish, add your own locale
+- **Single, Range & Multi-select** — pick one date, a date range, or any number of independent dates
+- **Week / Month / Year / Time / DateTime** views — granularity-aware grids, all powered by the same selection union
+- **Pluggable calendar engines** — Gregorian (default), Hijri (Umm al-Qura), Persian (Jalali / Borkowski), Buddhist Era — algorithmic, no third-party calendar libs
+- **Preset chips** — built-in `Today / Last 7 days / This month / Last month` + custom presets
+- **Disabled date ranges & range-length constraints** — booking-calendar friendly (`disabledRanges`, `minRangeLength`, `maxRangeLength`)
+- **Per-date event badges** — up to 3 colored dots per day with `+N` overflow, fully overrideable via `renderBadge`
+- **Workday counter** — `countWorkdays(start, end, { holidays, weekendDays })` ships in the public API
+- **Accessibility** — `accessibilityLabel` / `accessibilityState` / `accessibilityRole` on every cell, modal announce-on-open, keyboard navigation hook (`useKeyboardNav`)
+- **Headless mode** — `useDatePicker()` exposes the full state machine (`selection`, `dayProps(date)`, `handlers`) so you can build a 100% custom UI without giving up the engine
+- **Web support** — optional `react-native-web` peer + `*.web.tsx` shadow files (CSS transitions, `<div role="dialog">` portal, ESC handler)
+- **i18n ready** — built-in English, Turkish, Arabic, Persian, Thai locales, add your own
 - **Fully themeable** — colors, granular `fontSize` / `spacing` / `radius` tokens, border radius, everything
-- **Slot-based rendering** — override individual layout pieces (`renderMonthHeader`, `renderSaveButton`, `renderCloseIcon`, `renderWeekDayHeader`, `renderHolidayLabel`) without rewriting the whole picker
-- **Per-day callbacks** — `getDayColor`, `getDayStyle`, `getDayTextStyle`, `getDayContent` let you tweak individual cells based on runtime state
-- **Smooth range-fill animation** — staggered left-to-right scaleX fill driven by the native driver; `disableAnimation` turns it off
+- **Slot-based rendering** — override individual layout pieces (`renderMonthHeader`, `renderSaveButton`, `renderCloseIcon`, `renderWeekDayHeader`, `renderHolidayLabel`, `renderBadge`) without rewriting the whole picker
+- **Per-day callbacks** — `getDayColor`, `getDayStyle`, `getDayTextStyle`, `getDayContent`, `getBadge` let you tweak individual cells based on runtime state
+- **Uniform range-fill animation** — every in-range cell fades in at the same time (160 ms cubic ease-out, native driver); `disableAnimation` turns it off
 - **Safe-area aware modal** — respects notch/status bar via `react-native-safe-area-context` when installed, platform-default fallback otherwise
 - **Holidays support** — highlight public holidays with labels, per-holiday color / icon / importance
 - **Modal & Inline** — use as a full-screen modal or embed inline
 - **Style escape hatches** on every surface (container, header, save/close buttons, day cells)
-- **Composable** — use the main component or import individual parts
-- **TypeScript** — full type definitions included
+- **Composable** — use the main component or import individual parts (`CalendarList`, `DayCell`, `MonthGrid`, `YearGrid`, `WeekGrid`, `TimePicker`, `DateTimePicker`, `PresetBar`)
+- **TypeScript** — full type definitions, including the `Selection` discriminated union and `CalendarEngine` interface
+
+## What's new in v0.3.0
+
+v0.3.0 is an additive expansion — **zero breaking changes**. Every prop, callback shape, and import path from v0.2.x continues to work as-is.
+
+### New selection modes
+
+```tsx
+// Multi-select — toggle any number of dates
+<AdvancedDatePicker
+  mode="multi"
+  selectedDates={dates}
+  onChange={(sel) => sel.kind === 'multi' && /* sel.dates is a Set<string> */}
+/>
+
+// Booking-calendar style range with blocked nights
+<AdvancedDatePicker
+  mode="range"
+  disabledRanges={[{ start, end }, ...]}
+  minRangeLength={2}
+  maxRangeLength={14}
+/>
+```
+
+### Preset chips
+
+```tsx
+import { AdvancedDatePicker, builtInPresets } from 'react-native-advanced-date-picker'
+
+<AdvancedDatePicker
+  mode="range"
+  presets={[...builtInPresets, { id: 'next-7', label: 'Next 7 days', range: () => /* {start,end} */ }]}
+/>
+```
+
+### Per-date badges
+
+```tsx
+<AdvancedDatePicker
+  getBadge={({ day }) =>
+    day.day === 12
+      ? [{ color: '#10B981', label: 'Birthday' }, { color: '#F59E0B', label: 'Reminder' }]
+      : []
+  }
+/>
+```
+
+### Pluggable calendar engines
+
+```tsx
+import { AdvancedDatePicker, hijri, ar } from 'react-native-advanced-date-picker'
+
+// (string locales work too once the engine is wired through your own picker —
+//  the built-in <AdvancedDatePicker> currently consumes engine via useDatePicker)
+const picker = useDatePicker({ engine: hijri, locale: ar })
+```
+
+### Headless hook
+
+```tsx
+import { useDatePicker } from 'react-native-advanced-date-picker'
+
+const picker = useDatePicker({ selectionMode: 'single' })
+// picker.selection            — discriminated union { kind, ... }
+// picker.calendarData         — MonthData[] (engine-aware)
+// picker.dayProps(date)       — { onPress, isSelected, isInRange, isDisabled, ... }
+// picker.handlers.selectDate / clear / setSelection
+```
+
+### Workday counter
+
+```tsx
+import { countWorkdays } from 'react-native-advanced-date-picker'
+
+countWorkdays(start, end, { holidays, weekendDays: [0, 6] }) // → number
+```
+
+### Accessibility & keyboard
+
+- Day cells expose `accessibilityRole="button"`, dynamic `accessibilityLabel` (locale-aware: weekday, date, holiday, selected, today, unavailable), `accessibilityState`
+- `<DatePickerModal>` announces on open via `AccessibilityInfo.announceForAccessibility`
+- `useKeyboardNav()` hook drives `Arrow` / `PageUp` / `PageDown` / `Home` / `End` / `Enter` / `Escape` focus on the web
+
+### Web support
+
+`react-native-web` is now an optional peer dependency. The package ships `DatePickerModal.web.tsx` and `DayCell.web.tsx` — Metro / webpack platform resolution picks them automatically; the native bundle is unaffected.
+
+### Migration
+
+Nothing to migrate — your v0.2.x code keeps working. To opt into v0.3.0 features, just start passing the new props (`presets`, `disabledRanges`, `getBadge`, `onChange`) or import the new exports (`useDatePicker`, `useKeyboardNav`, `builtInPresets`, `countWorkdays`, `hijri` / `persian` / `buddhist`, `ar` / `fa` / `th`).
 
 ## Installation
 

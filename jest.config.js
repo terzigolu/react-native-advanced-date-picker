@@ -7,7 +7,12 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@react-native-community)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/lib/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/lib/',
+    '/example/',
+    '\\.stories\\.tsx?$',
+  ],
   testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],
   moduleNameMapper: {
     'react-native': '<rootDir>/src/__tests__/__mocks__/react-native.js',

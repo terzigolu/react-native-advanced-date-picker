@@ -5,6 +5,66 @@ All notable changes to `react-native-advanced-date-picker` will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-04-29
+
+This is a large additive release. **Zero breaking changes** — every v0.2.x prop, callback shape, and import keeps working as-is. New surfaces are opt-in.
+
+### Added — selection
+- **Multi-select mode** (`mode="multi"`) — toggle any number of independent dates. New `selectedDates?: Date[]` prop and `selection.kind === 'multi'` branch (Set-backed).
+- **Disabled date ranges** (`disabledRanges?: { start, end }[]`) and **range-length constraints** (`minRangeLength`, `maxRangeLength`) — booking-calendar primitives.
+- **`Selection` discriminated union** is now public — `{ kind: 'single', date } | { kind: 'range', start, end } | { kind: 'multi', dates: Set<string> } | { kind: 'time', date, hour, minute }`.
+- **`onChange?: (selection: Selection) => void`** — new emit channel that gives you the full union. The legacy `onDateChange({ startDate, endDate })` continues to fire in parallel for `single`/`range` so existing handlers keep working.
+
+### Added — views
+- **`WeekGrid`**, **`MonthGrid`**, **`YearGrid`**, **`TimePicker`**, **`DateTimePicker`** components for non-day pickers (ISO weeks, 12-cell month grid, decade view, hour/minute scroll, date+time composition).
+- **`view`** prop routes `<AdvancedDatePicker>` between these views (`'day' | 'week' | 'month' | 'year' | 'time'`).
+
+### Added — UX layers
+- **Preset chips** — `presets={true}` enables built-ins (`Today / Last 7 days / This month / Last month`); pass an array to use custom presets. New exports: `PresetBar`, `builtInPresets`, `getPresetLabel`, `DateRangePreset`.
+- **Quick year/month navigation** — tap the month header to drill into a 12-cell month grid; opt in via `quickNav={true}`.
+- **Per-date event badges** — `getBadge` callback returns one or many `{ color, label?, id? }` dots; the default UI renders up to 3 with `+N` overflow. `renderBadge` slot for full custom layouts.
+
+### Added — engines
+- **`CalendarEngine` interface** + pluggable engines: `gregorian` (default), `hijri` (Umm al-Qura via `Intl.DateTimeFormat({ calendar: 'islamic-umalqura' })` + tabular Kuwaiti fallback), `persian` (Borkowski algorithm with `~~` truncation, no third-party libs), `buddhist` (Gregorian + 543 offset).
+- **New built-in locales:** `ar` (Arabic), `fa` (Persian), `th` (Thai). String locale codes (`"ar" | "fa" | "th"`) now resolve to the right locale on `<AdvancedDatePicker>`.
+- The legacy `generateCalendarData`, `generateMonthData`, `getMonthName`, `getDayName`, `getShortDayNames`, `addMonths` remain re-exported via the Gregorian engine — same behaviour, same imports.
+
+### Added — headless API
+- **`useDatePicker(options)`** hook exposes the full state machine: `selection`, `calendarData`, `dayProps(date)`, `handlers.{ selectDate, clear, setSelection }`, plus per-date predicates (`isSelected`, `isInRange`, `isDisabled`).
+- The component is now a thin shell over the hook — UI and state are cleanly decoupled. Build a custom date picker UI without forking.
+
+### Added — accessibility & keyboard
+- `<DayCell>` ships `accessibilityRole="button"`, dynamic `accessibilityLabel` (locale-aware: weekday + full date + holiday + selected + today + unavailable), and `accessibilityState={{ selected, disabled }}`.
+- `<DatePickerModal>` announces on open via `AccessibilityInfo.announceForAccessibility` and tags the container with `accessibilityViewIsModal`.
+- New `useKeyboardNav()` hook with focus state machine: `Arrow*`, `PageUp`/`PageDown` (month), `Home`/`End` (month boundaries), `Enter`/`Space` (select), `Escape` (caller-defined).
+- New a11y locale strings: `a11y_holiday_prefix`, `a11y_selected`, `a11y_today`, `a11y_disabled`, `a11y_change_month`, `a11y_modal_announce`.
+
+### Added — utilities
+- **`countWorkdays(start, end, { holidays, weekendDays })`** — DST-aware workday counter.
+- **`isDateBlocked`**, **`getRangeLength`**, **`clampRange`** — booking helpers.
+- **`getISOWeek`**, **`getWeekRange`**, **`getDecade`** — for week / year views.
+- **`formatDateKey(date)`** — ISO `YYYY-MM-DD` key used by multi-select and a11y composition.
+- **`isWeb` / `isNative`** platform guards.
+
+### Added — web support
+- `react-native-web` declared as an **optional** peer dependency (`peerDependenciesMeta.optional`).
+- `DatePickerModal.web.tsx` (fixed-position overlay, ESC handler, focus management, `<div role="dialog" aria-modal>`) and `DayCell.web.tsx` (CSS transition for the range fill, hover state) shadow files. Native bundles are unaffected.
+
+### Added — example app & docs
+- `example/` — standalone Expo SDK 55 app with screens for every feature (single, range, multi-select, booking, presets, badges, headless hook, locales).
+- `.storybook/` — Storybook (React + Vite) scaffold with stories for `DayCell`, `MonthHeader`, `WeekDayHeader`, `AdvancedDatePicker`.
+
+### Changed
+- `package.json` `version` is now `0.3.0`.
+- Internal state in `<AdvancedDatePicker>` migrated to a single `Selection` union driven by a reducer; legacy scalar props (`startDate`, `endDate`, `mode`, `onDateChange`) are bridged through a `propsToSelection` adapter and a parallel echo emit. Externally identical.
+
+### Deprecated
+- The legacy `mode`, `startDate`, `endDate`, and `onDateChange` props remain fully supported in v0.3.x but are slated for removal in v1.0.0 in favour of `selection` / `view` / `enableTime` + `value` / `onChange`.
+
+### Notes
+- 213 tests, all green. TypeScript strict, `react-native-builder-bob` cjs + esm + typescript targets all clean.
+- 8 work streams merged: foundation refactor (selection union + engine interface + `useDatePicker`), multi-select + booking constraints, non-day pickers, presets + quick-nav, badges + workdays, a11y + keyboard, web shadow files, non-Gregorian engines, plus an Expo example app and a Storybook scaffold.
+
 ## [0.2.3] — 2026-04-24
 
 ### Changed

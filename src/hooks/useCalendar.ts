@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
-import { generateCalendarData } from '../utils/dateUtils'
 import type { Holiday, MonthData } from '../utils/types'
+import { gregorian } from '../calendars/gregorian'
+import type { CalendarEngine } from '../calendars/types'
 
 type UseCalendarOptions = {
   /** Number of months to generate (default: 12) */
@@ -11,6 +12,12 @@ type UseCalendarOptions = {
   holidays?: Holiday[]
   /** Start generating from this date (default: today) */
   startFrom?: Date
+  /**
+   * Pluggable calendar engine. Defaults to Gregorian. Pass an engine from
+   * `react-native-advanced-date-picker/calendars/<name>` for non-Gregorian
+   * calendars (Hijri / Persian / Buddhist — Lane 7).
+   */
+  engine?: CalendarEngine
 }
 
 type UseCalendarReturn = {
@@ -24,6 +31,7 @@ const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn => {
     locale = 'en',
     holidays = [],
     startFrom,
+    engine = gregorian,
   } = options
 
   const [revision, setRevision] = useState(0)
@@ -31,8 +39,19 @@ const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn => {
   const calendarData = useMemo(() => {
     // revision is used to force recalculation
     void revision
-    return generateCalendarData(months, locale, holidays, startFrom)
-  }, [months, locale, holidays, startFrom, revision])
+    const today = engine.today()
+    const start = startFrom || today
+    const startYear = start.getFullYear()
+    const startMonth = start.getMonth()
+
+    const data: MonthData[] = []
+    for (let i = 0; i < months; i++) {
+      const m = (startMonth + i) % 12
+      const y = startYear + Math.floor((startMonth + i) / 12)
+      data.push(engine.generateMonth(y, m, locale, holidays, today))
+    }
+    return data
+  }, [months, locale, holidays, startFrom, engine, revision])
 
   const regenerate = useCallback(() => {
     setRevision(r => r + 1)

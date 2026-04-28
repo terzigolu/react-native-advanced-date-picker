@@ -1,10 +1,23 @@
 import React, { memo, useCallback } from 'react'
 import { View, ScrollView, Text, StyleSheet, Alert, Dimensions } from 'react-native'
 import type { StyleProp, ViewStyle } from 'react-native'
-import type { DatePickerMode, DateItem, Holiday } from '../utils/types'
+import type {
+  DatePickerMode,
+  DateItem,
+  Holiday,
+  SelectionMode,
+} from '../utils/types'
 import type { Theme } from '../theme/types'
 import type { Locale } from '../locale/types'
-import { toDate, isSameDate } from '../utils/dateUtils'
+import {
+  toDate,
+  isSameDate,
+  isDateBlocked,
+  clampRange,
+  getRangeLength,
+  formatDateKey,
+} from '../utils/dateUtils'
+import type { DisabledRange } from '../utils/dateUtils'
 import useCalendar from '../hooks/useCalendar'
 import DayCell from './DayCell'
 import WeekDayHeader from './WeekDayHeader'
@@ -18,10 +31,16 @@ import type {
   GetDayStyle,
   GetDayTextStyle,
   GetDayContent,
+  GetDayBadge,
+  RenderDayBadge,
 } from './types'
 
 type Props = {
-  mode: DatePickerMode
+  /**
+   * Lane 1 — `'single' | 'range'` are still supported for backward compat.
+   * `'multi'` (Lane 1) keeps each tap as a toggle in `selectedDateKeys`.
+   */
+  mode: DatePickerMode | SelectionMode
   locale: Locale
   theme: Theme
   startDate: Date | null
@@ -33,6 +52,16 @@ type Props = {
   holidays?: Holiday[]
   months?: number
   disabledDates?: (string | Date)[]
+  /** Lane 1 — declarative blocked windows (booked nights, etc.). */
+  disabledRanges?: DisabledRange[]
+  /** Lane 1 — minimum inclusive range length in days. */
+  minRangeLength?: number
+  /** Lane 1 — maximum inclusive range length in days. */
+  maxRangeLength?: number
+  /** Lane 1 — set of selected ISO `YYYY-MM-DD` keys (multi mode). */
+  selectedDateKeys?: Set<string>
+  /** Lane 1 — fired with the toggled `Date` after a multi-mode tap. */
+  onMultiToggle?: (date: Date) => void
   renderDay?: (day: DateItem, state: DayCellState) => React.ReactNode
   showHolidays?: boolean
   /** Disable the range band fill animation. Default: false */
@@ -57,6 +86,27 @@ type Props = {
   getDayTextStyle?: GetDayTextStyle
   /** Per-day custom content override (replaces the day number). */
   getDayContent?: GetDayContent
+  /** Lane 4 — per-day badge callback (event marker dots). */
+  getBadge?: GetDayBadge
+  /** Lane 4 — full slot override for the badge row. */
+  renderBadge?: RenderDayBadge
+  /**
+   * Lane 3 — anchor month for the generated calendar list. Defaults to
+   * "today" (current month). Pass any date inside a desired anchor month
+   * to scroll-jump after a quickNav drill-in.
+   */
+  startFrom?: Date
+  /**
+   * Lane 3 — opt-in MonthHeader press handler. Receives the month's first
+   * day at midnight. When set, MonthHeader becomes a `<Pressable>`.
+   */
+  onPressMonthHeader?: (firstDay: Date) => void
+  /**
+   * Lane 5 — keyboard navigation focus. When set, the matching day cell
+   * renders a focus ring and announces the focused state. Driven by the
+   * `useKeyboardNav` hook on platforms that emit `onKeyDown`.
+   */
+  focusedDate?: Date | null
 }
 
 const screenWidth = Dimensions.get('window').width
@@ -74,6 +124,11 @@ const CalendarList: React.FC<Props> = ({
   holidays = [],
   months = 12,
   disabledDates = [],
+  disabledRanges,
+  minRangeLength,
+  maxRangeLength,
+  selectedDateKeys,
+  onMultiToggle,
   renderDay,
   showHolidays = true,
   disableAnimation = false,
@@ -83,15 +138,21 @@ const CalendarList: React.FC<Props> = ({
   renderMonthHeader,
   renderWeekDayHeader,
   renderHolidayLabel,
+  focusedDate,
   getDayColor,
   getDayStyle,
   getDayTextStyle,
   getDayContent,
+  getBadge,
+  renderBadge,
+  startFrom,
+  onPressMonthHeader,
 }) => {
   const { calendarData } = useCalendar({
     months,
     locale: locale.code,
     holidays,
+    startFrom,
   })
 
   const handleDatePress = useCallback(
@@ -104,6 +165,9 @@ const CalendarList: React.FC<Props> = ({
         if (disabled && isSameDate(date, disabled)) return
       }
 
+      // Lane 1 — declarative disabled windows short-circuit before emit.
+      if (isDateBlocked(date, disabledRanges)) return
+
       if (minDate) {
         const min = new Date(minDate)
         min.setHours(0, 0, 0, 0)
@@ -113,6 +177,12 @@ const CalendarList: React.FC<Props> = ({
           ])
           return
         }
+      }
+
+      // Lane 1 — multi mode: tap toggles membership; parent owns the Set.
+      if (mode === 'multi') {
+        onMultiToggle?.(date)
+        return
       }
 
       if (mode === 'single') {
@@ -129,13 +199,47 @@ const CalendarList: React.FC<Props> = ({
 
       if (startDate && !endDate) {
         if (date >= startDate) {
+          // Lane 1 — clamp the picked end-date to satisfy min/max constraints.
+          // The clamp helper preserves orientation, so we pass `start` first.
+          if (
+            typeof minRangeLength === 'number' ||
+            typeof maxRangeLength === 'number'
+          ) {
+            const length = getRangeLength(startDate, date)
+            if (
+              (typeof minRangeLength === 'number' && length < minRangeLength) ||
+              (typeof maxRangeLength === 'number' && length > maxRangeLength)
+            ) {
+              const clamped = clampRange(
+                startDate,
+                date,
+                minRangeLength,
+                maxRangeLength,
+              )
+              onEndDateChange(clamped.end)
+              return
+            }
+          }
           onEndDateChange(date)
         } else {
           onStartDateChange(date)
         }
       }
     },
-    [mode, startDate, endDate, minDate, disabledDates, locale, onStartDateChange, onEndDateChange],
+    [
+      mode,
+      startDate,
+      endDate,
+      minDate,
+      disabledDates,
+      disabledRanges,
+      minRangeLength,
+      maxRangeLength,
+      onMultiToggle,
+      locale,
+      onStartDateChange,
+      onEndDateChange,
+    ],
   )
 
   const checkIsInRange = (day: DateItem) => {
@@ -206,28 +310,104 @@ const CalendarList: React.FC<Props> = ({
                 monthName={month.monthName}
                 year={month.year}
                 theme={theme}
+                onPress={
+                  onPressMonthHeader
+                    ? () => {
+                        const firstDay = new Date(month.year, month.month, 1)
+                        firstDay.setHours(0, 0, 0, 0)
+                        onPressMonthHeader(firstDay)
+                      }
+                    : undefined
+                }
               />
             )}
             <View style={[styles.daysGrid, daysGridStyle]}>
-              {month.days.map(day => (
-                <DayCell
-                  key={day.fullDate || day.id}
-                  day={day}
-                  onPress={() => handleDatePress(day)}
-                  startDate={startDate}
-                  endDate={endDate}
-                  isInRange={checkIsInRange(day)}
-                  minDate={minDate}
-                  maxDate={maxDate}
-                  theme={theme}
-                  disableAnimation={disableAnimation}
-                  renderDay={renderDay}
-                  getDayColor={getDayColor}
-                  getDayStyle={getDayStyle}
-                  getDayTextStyle={getDayTextStyle}
-                  getDayContent={getDayContent}
-                />
-              ))}
+              {month.days.map(day => {
+                const dayDate = toDate(day.fullDate)
+                const isBlocked = dayDate
+                  ? isDateBlocked(dayDate, disabledRanges)
+                  : false
+                // Lane 5 — compose accessibilityLabel from locale + day state.
+                // Skipped for empty placeholder cells so screen readers don't
+                // announce them.
+                let a11yLabel: string | undefined
+                if (!day.isEmpty && dayDate) {
+                  const dateText = (() => {
+                    try {
+                      return dayDate.toLocaleDateString(locale.code, {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })
+                    } catch {
+                      return dayDate.toDateString()
+                    }
+                  })()
+                  const parts: string[] = [dateText]
+                  if (day.isHoliday && day.holidayLabel) {
+                    const prefix = locale.a11y_holiday_prefix ?? ''
+                    parts.push(`${prefix} ${day.holidayLabel}`.trim())
+                  }
+                  if (day.isToday && locale.a11y_today) {
+                    parts.push(locale.a11y_today)
+                  }
+                  const isStart =
+                    !!startDate &&
+                    isSameDate(toDate(startDate), dayDate)
+                  const isEnd = !!endDate && isSameDate(toDate(endDate), dayDate)
+                  // Lane 5 — multi-select a11y: selectedDateKeys uses
+                  // `YYYY-MM-DD` (formatDateKey output), but `day.fullDate`
+                  // is a full ISO string. Compose the same key from dayDate
+                  // so the "selected" suffix actually fires.
+                  const isMultiSel =
+                    mode === 'multi' &&
+                    !!selectedDateKeys &&
+                    !!dayDate &&
+                    selectedDateKeys.has(formatDateKey(dayDate))
+                  if ((isStart || isEnd || isMultiSel) && locale.a11y_selected) {
+                    parts.push(locale.a11y_selected)
+                  }
+                  const dayDisabled =
+                    isBlocked ||
+                    (!!minDate && dayDate < toDate(minDate)!) ||
+                    (!!maxDate && dayDate > toDate(maxDate)!)
+                  if (dayDisabled && locale.a11y_disabled) {
+                    parts.push(locale.a11y_disabled)
+                  }
+                  a11yLabel = parts.join(', ')
+                }
+                return (
+                  <DayCell
+                    key={day.fullDate || day.id}
+                    day={day}
+                    onPress={() => handleDatePress(day)}
+                    startDate={startDate}
+                    endDate={endDate}
+                    isInRange={checkIsInRange(day)}
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    theme={theme}
+                    disableAnimation={disableAnimation}
+                    renderDay={renderDay}
+                    getDayColor={getDayColor}
+                    getDayStyle={getDayStyle}
+                    getDayTextStyle={getDayTextStyle}
+                    getDayContent={getDayContent}
+                    getBadge={getBadge}
+                    renderBadge={renderBadge}
+                    isMultiMode={mode === 'multi'}
+                    selectedDateKeys={selectedDateKeys}
+                    isBlocked={isBlocked}
+                    accessibilityLabel={a11yLabel}
+                    isFocused={
+                      !!focusedDate &&
+                      !!dayDate &&
+                      isSameDate(focusedDate, dayDate)
+                    }
+                  />
+                )
+              })}
             </View>
             {showHolidays && (
               <View

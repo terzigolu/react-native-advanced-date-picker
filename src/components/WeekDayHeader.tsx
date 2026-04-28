@@ -33,8 +33,24 @@ const WeekDayHeader: React.FC<Props> = ({
           : isSaturday
             ? weekendOverride ?? theme.saturdayColor ?? theme.weekDayHeaderColor
             : theme.weekDayHeaderColor
+        // Lane 5 — a11y label uses the full localized name (Intl) so screen
+        // readers don't read just "Mon" but "Monday". 2024-01-01 was a Monday,
+        // so offsetting by `index` gives the correct weekday for any locale.
+        const longDayName = (() => {
+          try {
+            return new Date(2024, 0, 1 + index).toLocaleDateString(locale.code, {
+              weekday: 'long',
+            })
+          } catch {
+            return day
+          }
+        })()
         return (
-          <View style={[styles.dayItem, dayItemStyle]} key={index}>
+          <View
+            style={[styles.dayItem, dayItemStyle]}
+            key={index}
+            accessibilityRole="text"
+            accessibilityLabel={longDayName}>
             <Text
               style={[
                 styles.text,

@@ -19,22 +19,45 @@ const TouchableOpacity = ({ children, onPress, disabled, style, ...props }) =>
     children
   )
 
-const FlatList = ({ data, renderItem, keyExtractor, ListHeaderComponent, ...props }) => {
-  const items = (data || []).map((item, index) => {
-    const key = keyExtractor ? keyExtractor(item, index) : String(index)
-    return React.createElement(
-      React.Fragment,
-      { key },
-      renderItem({ item, index })
-    )
-  })
+const Pressable = ({ children, onPress, disabled, style, ...props }) => {
+  // Resolve function-style style ({ pressed }) => style — tests treat the
+  // host as not-pressed. This keeps the snapshot deterministic and lets
+  // findByType('Pressable') hit a stable host element.
+  const resolvedStyle =
+    typeof style === 'function' ? style({ pressed: false }) : style
+  const renderedChildren =
+    typeof children === 'function' ? children({ pressed: false }) : children
   return React.createElement(
-    View,
-    props,
-    ListHeaderComponent || null,
-    ...items
+    'Pressable',
+    {
+      onClick: disabled ? undefined : onPress,
+      onPress: disabled ? undefined : onPress,
+      disabled,
+      style: resolvedStyle,
+      ...props,
+    },
+    renderedChildren
   )
 }
+
+const FlatList = React.forwardRef(
+  ({ data, renderItem, keyExtractor, ListHeaderComponent, ...props }, _ref) => {
+    const items = (data || []).map((item, index) => {
+      const key = keyExtractor ? keyExtractor(item, index) : String(index)
+      return React.createElement(
+        React.Fragment,
+        { key },
+        renderItem({ item, index })
+      )
+    })
+    return React.createElement(
+      View,
+      props,
+      ListHeaderComponent || null,
+      ...items
+    )
+  }
+)
 
 const Modal = ({ children, visible, ...props }) => {
   if (!visible) return null
@@ -103,10 +126,31 @@ const Platform = {
   select: (obj) => obj.ios || obj.default,
 }
 
+const AccessibilityInfo = {
+  announceForAccessibility: jest.fn(),
+  isScreenReaderEnabled: () => Promise.resolve(false),
+  addEventListener: () => ({ remove: () => {} }),
+}
+
+const PanResponder = {
+  create: (config) => ({
+    panHandlers: {
+      onStartShouldSetResponder: () => false,
+      onMoveShouldSetResponder: () => false,
+      onResponderGrant: () => {},
+      onResponderMove: () => {},
+      onResponderRelease: () => {},
+      onResponderTerminate: () => {},
+      ...(config || {}),
+    },
+  }),
+}
+
 module.exports = {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   FlatList,
   ScrollView,
   Modal,
@@ -117,4 +161,6 @@ module.exports = {
   StyleSheet,
   Dimensions,
   Platform,
+  AccessibilityInfo,
+  PanResponder,
 }

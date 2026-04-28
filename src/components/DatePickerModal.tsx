@@ -8,6 +8,7 @@ import {
   Animated,
   Platform,
   StatusBar,
+  AccessibilityInfo,
 } from 'react-native'
 import type { StyleProp, ViewStyle, TextStyle } from 'react-native'
 import type { Theme } from '../theme/types'
@@ -103,11 +104,16 @@ const DatePickerModal: React.FC<Props> = ({
           useNativeDriver: true,
         }),
       ]).start()
+      // Lane 5 — announce to screen readers when the modal opens. Best-effort
+      // only; some platforms / mock environments may not implement this API.
+      const message =
+        locale.a11y_modal_announce ?? locale.selectDate ?? 'Date picker opened.'
+      AccessibilityInfo?.announceForAccessibility?.(message)
     } else {
       fadeAnim.setValue(0)
       slideAnim.setValue(300)
     }
-  }, [visible, fadeAnim, slideAnim])
+  }, [visible, fadeAnim, slideAnim, locale])
 
   const handleSave = useCallback(() => {
     onSave?.()
@@ -123,6 +129,9 @@ const DatePickerModal: React.FC<Props> = ({
       <Animated.View
         style={[styles.overlay, { opacity: fadeAnim }, overlayStyle]}>
         <Animated.View
+          accessibilityViewIsModal
+          accessibilityRole="alert"
+          accessibilityLabel={locale.a11y_modal_announce ?? locale.selectDate}
           style={[
             styles.container,
             {
@@ -142,6 +151,8 @@ const DatePickerModal: React.FC<Props> = ({
             ) : (
               <TouchableOpacity
                 onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={locale.cancel}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={closeButtonStyle}>
                 <Text
@@ -174,6 +185,8 @@ const DatePickerModal: React.FC<Props> = ({
                 <TouchableOpacity
                   onPress={handleSave}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={locale.save}
                   style={[
                     styles.saveButton,
                     {

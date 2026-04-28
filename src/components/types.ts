@@ -17,6 +17,13 @@ export type DayCellState = {
   isHoliday: boolean
   isSunday: boolean
   isSaturday: boolean
+  /**
+   * Lane 1 — true when the date falls inside one of the consumer-declared
+   * `disabledRanges` (e.g. reservation calendar booked nights). Optional for
+   * backward compatibility: callers that don't pass `disabledRanges` keep
+   * receiving the original 7-flag shape.
+   */
+  isBlocked?: boolean
 }
 
 /**
@@ -87,3 +94,44 @@ export type GetDayContent = (args: {
   state: DayCellState
   theme: Theme
 }) => ReactNode | undefined
+
+// ---------------------------------------------------------------------------
+// Lane 4 — per-date badges (event marker dots)
+// ---------------------------------------------------------------------------
+
+/**
+ * Lane 4 — a single badge dot rendered under the day number. Multiple badges
+ * stack horizontally in a row; the default UI caps the visible count at 3 and
+ * collapses the remainder into a "+N" overflow indicator.
+ */
+export interface DayBadge {
+  /** Dot fill color. */
+  color: string
+  /** Optional human-readable label (a11y / future tooltip surface). */
+  label?: string
+  /** Optional stable id for React key reconciliation. */
+  id?: string
+}
+
+/**
+ * Lane 4 — per-day callback returning zero, one, or many `DayBadge`s. Returning
+ * `undefined` (or an empty array) means "no badges for this cell". Called for
+ * every non-empty day cell, so keep the body cheap.
+ */
+export type GetDayBadge = (args: {
+  day: DateItem
+  state: DayCellState
+  theme: Theme
+}) => DayBadge | DayBadge[] | undefined
+
+/**
+ * Lane 4 — full slot override for the badge row. When provided, the default
+ * dot+overflow UI is bypassed entirely and the consumer's return is rendered
+ * verbatim under the day number. The `badges` array is the normalized result
+ * of `getBadge` (always an array, never `undefined`).
+ */
+export type RenderDayBadge = (args: {
+  badges: DayBadge[]
+  day: DateItem
+  theme: Theme
+}) => ReactNode

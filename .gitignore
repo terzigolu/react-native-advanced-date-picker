@@ -32,3 +32,12 @@ coverage/
 
 # Misc
 .cache/
+
+# Storybook
+storybook-static/
+
+# Expo example
+example/.expo/
+example/web-build/
+example/dist/
+
